@@ -1,29 +1,18 @@
 {
-    "keyboard_name": "HAWKING",
+    "keyboard_name": "HAWKING2",
     "url": "https://github.com/romanmerkulog",
     "manufacturer": "merkulovKBDS",
     "maintainer": "romanmerkulog",
     "development_board": "promicro_rp2040",
     "usb": {
         "vid": "0xDEED",
-        "pid": "0x4444",
-        "device_version": "1.0.4"
+        "pid": "0x5555",
+        "device_version": "2.0.1"
     },
     "features": {
         "extrakey": true,
         "nkro": false
     },
-    "encoder": {
-    "rotary": [
-            {
-                "pin_a": "GP21",
-                "pin_b": "GP22"
-            }
-        ]
-    },
-    "direct_pins": [
-        ["GP28"]
-    ],
     "matrix_pins": {
         "rows": ["GP16", "GP17", "GP18", "GP19", "GP20"],
         "cols": [
