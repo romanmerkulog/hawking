@@ -1,4 +1,5 @@
 #include QMK_KEYBOARD_H
+#include "os_detection.h" // Подключаем встроенный детектор ОС
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [0] = LAYOUT_based(
@@ -16,3 +17,103 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______, _______, _______, _______, _______, _______, _______, _______, _______,  _______,  _______, _______,  _______,  _______
     )
 };
+
+#ifdef OLED_ENABLE
+
+// Кастомная функция для отрисовки тонких рамок попиксельно (так как oled_write_rect работает с тайлами)
+void draw_block_border(uint8_t start_y) {
+    // Верхняя и нижняя линии рамки (ширина 32 пикселя)
+    for (uint8_t x = 0; x < 32; x++) {
+        oled_write_pixel(x, start_y, true);
+        oled_write_pixel(x, start_y + 30, true);
+    }
+    // Левая и правая линии рамки (высота 31 пиксель)
+    for (uint8_t y = start_y; y < start_y + 31; y++) {
+        oled_write_pixel(0, y, true);
+        oled_write_pixel(31, y, true);
+    }
+}
+
+oled_rotation_t oled_init_user(oled_rotation_t rotation) {
+    return OLED_ROTATION_90;
+}
+
+static uint16_t last_keycode = 0;
+
+bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+    if (record->event.pressed) {
+        last_keycode = keycode;
+    }
+    return true;
+}
+
+bool oled_task_user(void) {
+    // ==========================================
+    // БЛОК 1: WPM (Y: 0 ... 30)
+    // ==========================================
+    draw_block_border(0);
+    #ifdef WPM_ENABLE
+    oled_set_cursor(1, 1);
+    oled_write_P(PSTR("WPM"), false);
+    oled_set_cursor(1, 2);
+    oled_write(get_u8_str(get_current_wpm(), ' '), false);
+    #endif
+
+    // ==========================================
+    // БЛОК 2: СЛОЙ (Y: 32 ... 62)
+    // ==========================================
+    draw_block_border(32);
+    oled_set_cursor(1, 5);
+    oled_write_P(PSTR("LYR"), false);
+    oled_set_cursor(1, 6);
+    switch (get_highest_layer(layer_state)) {
+        case 0:  oled_write_P(PSTR("BASE"), false); break;
+        case 1:  oled_write_P(PSTR("LOWR"), false); break;
+        case 2:  oled_write_P(PSTR("RAIS"), false); break;
+        default: oled_write_P(PSTR("GKEY"), false); break;
+    }
+
+    // ==========================================
+    // БЛОК 3: КЕЙКОД (Y: 64 ... 94)
+    // ==========================================
+    draw_block_border(64);
+    oled_set_cursor(1, 9);
+    oled_write_P(PSTR("KEY"), false);
+    oled_set_cursor(1, 10);
+    if (last_keycode == 0) {
+        oled_write_P(PSTR("NONE"), false);
+    } else {
+        char kc_str[5];
+        snprintf(kc_str, sizeof(kc_str), "%02X", last_keycode & 0xFF);
+        oled_write(kc_str, false);
+    }
+
+    // ==========================================
+    // БЛОК 4: ОПЕРАЦИОННАЯ СИСТЕМА (Y: 96 ... 126)
+    // ==========================================
+    draw_block_border(96);
+    oled_set_cursor(1, 13);
+    oled_write_P(PSTR("OS:"), false);
+    oled_set_cursor(1, 14);
+
+    // Вызываем корректное имя функции детектора из QMK API
+    os_variant_t detected_os = detected_host_os();
+    switch (detected_os) {
+        case OS_MACOS:
+        case OS_IOS:
+            oled_write_P(PSTR("APL"), false);
+            break;
+        case OS_WINDOWS:
+            oled_write_P(PSTR("WIN"), false);
+            break;
+        case OS_LINUX:
+            oled_write_P(PSTR("GNU"), false);
+            break;
+        default: // Сюда же попадает OS_UNSURE на этапе инициализации
+            oled_write_P(PSTR("???"), false);
+            break;
+    }
+
+    return false;
+}
+#endif

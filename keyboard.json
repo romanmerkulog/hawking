@@ -11,7 +11,8 @@
     },
     "features": {
         "extrakey": true,
-        "nkro": false
+        "nkro": false,
+        "os_detection": true
     },
     "matrix_pins": {
         "rows": ["GP0", "GP1", "GP2", "GP3", "GP4"],
@@ -33,8 +34,8 @@
         ]
     },
     "ps2": {
-        "clock_pin": "GP27",
-        "data_pin": "GP26",
+        "clock_pin": "GP7",
+        "data_pin": "GP6",
         "driver": "vendor",
         "enabled": true,
         "mouse_enabled": true
