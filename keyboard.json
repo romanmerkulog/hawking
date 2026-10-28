@@ -11,30 +11,31 @@
     },
     "features": {
         "extrakey": true,
-        "nkro": false
+        "nkro": false,
+        "os_detection": true
     },
     "matrix_pins": {
-        "rows": ["GP0", "GP1", "GP2", "GP3", "GP4"],
+        "rows": ["GP11", "GP12", "GP13", "GP14", "GP15"],
         "cols": [
-            "GP8",
-            "GP9",
-            "GP10",
-            "GP11",
-            "GP12",
-            "GP13",
-            "GP14",
-            "GP15",
-            "GP16",
-            "GP17",
-            "GP18",
-            "GP19",
+            "GP21",
             "GP20",
-            "GP21"
+            "GP19",
+            "GP18",
+            "GP17",
+            "GP16",
+            "GP10",
+            "GP9",
+            "GP8",
+            "GP4",
+            "GP3",
+            "GP2",
+            "GP1",
+            "GP0"
         ]
     },
     "ps2": {
-        "clock_pin": "GP27",
-        "data_pin": "GP26",
+        "clock_pin": "GP7",
+        "data_pin": "GP6",
         "driver": "vendor",
         "enabled": true,
         "mouse_enabled": true
