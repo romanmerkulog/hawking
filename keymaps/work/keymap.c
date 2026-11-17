@@ -18,14 +18,12 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     )
 };
 
-void draw_block_border(uint8_t start_y) {
-    for (uint8_t x = 0; x < 32; x++) {
-        oled_write_pixel(x, start_y, true);
-        oled_write_pixel(x, start_y + 30, true);
-    }
-    for (uint8_t y = start_y; y < start_y + 31; y++) {
-        oled_write_pixel(0, y, true);
-        oled_write_pixel(31, y, true);
+void draw_block(uint8_t start_y, uint8_t height, bool invert) {
+    for (uint8_t y = start_y; y < start_y + height; y++) {
+        for (uint8_t x = 0; x < 32; x++) {
+            bool is_border = (x == 0 || x == 31 || y == start_y || y == start_y + height - 1);
+            oled_write_pixel(x, y, is_border ? true : invert);
+        }
     }
 }
 
@@ -33,70 +31,73 @@ oled_rotation_t oled_init_user(oled_rotation_t rotation) {
     return OLED_ROTATION_90;
 }
 
-static uint16_t last_keycode = 0;
-
-bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-    if (record->event.pressed) {
-        last_keycode = keycode;
-    }
-    return true;
-}
-
 bool oled_task_user(void) {
-    // OS detector
-    draw_block_border(0);
+    static bool first_draw = true;
+    static uint8_t last_mods = 0xFF;
+    static bool last_caps = false;
+    static layer_state_t last_layer = 255;
+    static os_variant_t last_os = OS_UNSURE;
+
+    uint8_t cur_mods = get_mods() | get_oneshot_mods();
+    bool cur_caps = host_keyboard_led_state().caps_lock;
+    layer_state_t cur_layer = get_highest_layer(layer_state);
+    os_variant_t cur_os = detected_host_os();
+
+    if (!first_draw &&
+        cur_mods == last_mods &&
+        cur_caps == last_caps &&
+        cur_layer == last_layer &&
+        cur_os == last_os) {
+        return false;
+    }
+
+    if (first_draw) {
+        draw_block(0, 31, false);
+        draw_block(32, 31, false);
+        draw_block(64, 63, cur_caps);
+        first_draw = false;
+    } else if (cur_caps != last_caps) {
+        draw_block(64, 63, cur_caps);
+    }
+
+    last_mods = cur_mods;
+    last_caps = cur_caps;
+    last_layer = cur_layer;
+    last_os = cur_os;
+
     oled_set_cursor(1, 1);
     oled_write_P(PSTR("OS:"), false);
     oled_set_cursor(1, 2);
-    os_variant_t detected_os = detected_host_os();
-    switch (detected_os) {
-        case OS_MACOS:
-            oled_write_P(PSTR("MAC"), false);
-            break;
-        case OS_IOS:
-            oled_write_P(PSTR("IOS"), false);
-            break;
-        case OS_WINDOWS:
-            oled_write_P(PSTR("WIN"), false);
-            break;
-        case OS_LINUX:
-            oled_write_P(PSTR("GNU"), false);
-            break;
-        default:
-            oled_write_P(PSTR("WTF"), false);
-            break;
+    switch (cur_os) {
+        case OS_MACOS:   oled_write_P(PSTR("MAC "), false); break;
+        case OS_IOS:     oled_write_P(PSTR("IOS "), false); break;
+        case OS_WINDOWS: oled_write_P(PSTR("WIN "), false); break;
+        case OS_LINUX:   oled_write_P(PSTR("GNU "), false); break;
+        default:         oled_write_P(PSTR("WTF "), false); break;
     }
 
-    // WPM counter
-    draw_block_border(32);
     oled_set_cursor(1, 5);
-    oled_write_P(PSTR("WPM"), false);
-    oled_set_cursor(1, 6);
-    oled_write(get_u8_str(get_current_wpm(), ' '), false);
-
-    // Layer ID
-    draw_block_border(64);
-    oled_set_cursor(1, 9);
-    oled_write_P(PSTR("LYR"), false);
-    oled_set_cursor(1, 10);
-    switch (get_highest_layer(layer_state)) {
+    switch (cur_layer) {
         case 0:  oled_write_P(PSTR("BASE"), false); break;
-        case 1:  oled_write_P(PSTR("ALT"), false); break;
-        default: oled_write_P(PSTR("GKEY"), false); break;
+        case 1:  oled_write_P(PSTR("FUNC"), false); break;
+        default: oled_write_P(PSTR("    "), false); break;
     }
+    oled_set_cursor(1, 6);
+    oled_write_P(PSTR("LAYR"), false);
 
-    // Keycode
-    draw_block_border(96);
+    oled_set_cursor(1, 9);
+    oled_write_P(cur_caps ? PSTR("CAPS") : PSTR("MOD:"), cur_caps);
+
+    oled_set_cursor(1, 11);
+    oled_write_P((cur_mods & MOD_MASK_CTRL)  ? PSTR("CTRL") : PSTR("    "), cur_caps);
+
+    oled_set_cursor(1, 12);
+    oled_write_P((cur_mods & MOD_MASK_SHIFT) ? PSTR("SHFT") : PSTR("    "), cur_caps);
+
     oled_set_cursor(1, 13);
-    oled_write_P(PSTR("KEY"), false);
-    oled_set_cursor(1, 14);
-    if (last_keycode == 0) {
-        oled_write_P(PSTR("   "), false);
-    } else {
-        char kc_str[5];
-        snprintf(kc_str, sizeof(kc_str), "%02X", last_keycode & 0xFF);
-        oled_write(kc_str, false);
-    }
+    oled_write_P((cur_mods & MOD_MASK_ALT)   ? PSTR("ALT ") : PSTR("    "), cur_caps);
 
+    oled_set_cursor(1, 14);
+    oled_write_P((cur_mods & MOD_MASK_GUI)   ? PSTR("SUPR") : PSTR("    "), cur_caps);
     return false;
 }

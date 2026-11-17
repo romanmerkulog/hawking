@@ -5,8 +5,8 @@
     "maintainer": "romanmerkulog",
     "development_board": "promicro_rp2040",
     "usb": {
-        "vid": "0xDEED",
-        "pid": "0x5555",
+        "vid": "0xFEED",
+        "pid": "0x1231",
         "device_version": "2.0.1"
     },
     "features": {

@@ -1,4 +1,4 @@
-name: Build the Hawking firmware
+name: Build
 
 on:
   push:
@@ -36,7 +36,7 @@ jobs:
       - name: Upload Firmware Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: qmk-dj-firmware
+          name: qmk-hawking-firmware
           path: |
             *.hex
             *.bin

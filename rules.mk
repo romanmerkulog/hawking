@@ -1,2 +1,2 @@
 OLED_ENABLE = yes
-WPM_ENABLE = yes
+BOOTMAGIC_ENABLE = yes
